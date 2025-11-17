@@ -1,0 +1,44 @@
+# --- Python 기본 ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경
+venv/
+.env/
+*.env
+
+# 패키징 / 빌드 결과물
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# 테스트 / 커버리지
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# 로그 / 임시 파일
+*.log
+*.pid
+*.tmp
+*.swp
+*.swo
+
+# IDE / 에디터 설정
+.vscode/
+.idea/
+*.iml
+
+# OS/기타 잡파일
+.DS_Store
+Thumbs.db
+
+# Jupyter 관련 (혹시 쓸 수도 있으니)
+.ipynb_checkpoints/
+
+# Docker 관련 (이미지/컨테이너는 어차피 git에 안 올림)
+docker-compose.override.yml

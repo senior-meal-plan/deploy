@@ -1,0 +1,15 @@
+# === 공통(어디서나) ===
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# === 인프라 관련 ===
+infra/.env
+infra/*.log
+
+# === Docker 관련 ===
+*.pid
+logs/
+tmp/

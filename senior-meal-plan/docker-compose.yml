@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  spring-app:
+    build: .
+    ports:
+      # EC2(Host)의 8080 포트와 컨테이너의 8080 포트를 연결
+      - "8080:8080"
+    env_file:
+      # [핵심!] 2단계에서 만든 .env 파일을 환경변수로 주입
+      - ./.env
+    depends_on:
+      # 'redis' 서비스가 먼저 실행되도록 보장
+      - redis
+
+  # 2. Redis 서비스
+  redis:
+    # 공식 Redis 이미지 사용
+    image: "redis:7-alpine"
+    volumes:
+      # Redis 데이터를 EC2 호스트에 저장 (컨테이너 삭제돼도 데이터 유지)
+      - redis-data:/data
+    # [보안] 6379 포트를 외부에 노출하지 않습니다.
+    # 'spring-app'은 Docker 내부 네트워크로 'redis:6379'에 접근합니다.
+
+# Redis 데이터 영속성을 위한 볼륨 정의
+volumes:
+  redis-data:

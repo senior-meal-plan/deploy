@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  spring-app:
+    build:
+      context: ../senior-meal-plan           # ⬅ Spring Boot 프로젝트 폴더
+      dockerfile: Dockerfile      # 파일명이 Dockerfile이면 생략 가능
+    container_name: senior-meal-spring
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../senior-meal-plan/.env           # 스프링용 .env (있다면, 경로 맞게 조정)
+    depends_on:
+      - redis
+      - fastapi-app              # 스프링이 FastAPI 호출하니까 먼저 띄우기
+
+  fastapi-app:
+    build:
+      context: ../AI-main        # ⬅ FastAPI 프로젝트 폴더
+      dockerfile: Dockerfile
+    container_name: senior-meal-fastapi
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../AI-main/.env          # FastAPI용 .env (OpenAI 키 등, 있으면)
+    depends_on:
+      - redis
+
+  redis:
+    image: "redis:7-alpine"
+    container_name: senior-meal-redis
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
