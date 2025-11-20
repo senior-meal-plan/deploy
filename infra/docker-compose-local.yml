@@ -1,0 +1,51 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: senior-meal-nginx-local
+    ports:
+      - "80:80"
+      # 443 포트 제거 (로컬은 HTTP만)
+    volumes:
+      # [중요] 로컬용 설정파일을 연결합니다!
+      - ../nginx/nginx-local.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - spring-app
+      - fastapi-app
+
+  # Certbot 서비스 제거됨 (로컬에선 필요 없음)
+
+  spring-app:
+    build:
+      context: ../senior-meal-plan
+      dockerfile: Dockerfile
+    container_name: senior-meal-spring-local
+    expose:
+      - "8080"
+    env_file:
+      - ../senior-meal-plan/.env
+    environment:
+      - SERVER_FORWARD_HEADERS_STRATEGY=framework
+    depends_on:
+      - redis
+      - fastapi-app
+
+  fastapi-app:
+    build:
+      context: ../AI-main
+      dockerfile: Dockerfile
+    container_name: senior-meal-fastapi-local
+    expose:
+      - "8000"
+    env_file:
+      - ../AI-main/.env
+    depends_on:
+      - redis
+
+  redis:
+    image: "redis:7-alpine"
+    container_name: senior-meal-redis-local
+    volumes:
+      - redis-data-local:/data
+
+volumes:
+  redis-data-local:
