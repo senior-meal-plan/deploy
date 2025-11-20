@@ -1,28 +1,42 @@
-version: "3.8"
-
 services:
+  # [1] Nginx 서비스 추가
+  nginx:
+    image: nginx:latest
+    container_name: senior-meal-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - spring-app
+      - fastapi-app
+
   spring-app:
     build:
-      context: ../senior-meal-plan           # ⬅ Spring Boot 프로젝트 폴더
-      dockerfile: Dockerfile      # 파일명이 Dockerfile이면 생략 가능
+      context: ../senior-meal-plan
+      dockerfile: Dockerfile
     container_name: senior-meal-spring
-    ports:
-      - "8080:8080"
+    # ports:           <-- [중요] 주석 처리 또는 삭제 (Nginx가 내부망으로 접속하므로 불필요)
+    #   - "8080:8080"
+    expose:            # 대신 내부 네트워크에는 8080이 열려있음을 명시
+      - "8080"
     env_file:
-      - ../senior-meal-plan/.env           # 스프링용 .env (있다면, 경로 맞게 조정)
+      - ../senior-meal-plan/.env
     depends_on:
       - redis
-      - fastapi-app              # 스프링이 FastAPI 호출하니까 먼저 띄우기
+      - fastapi-app
 
   fastapi-app:
     build:
-      context: ../AI-main        # ⬅ FastAPI 프로젝트 폴더
+      context: ../AI-main
       dockerfile: Dockerfile
     container_name: senior-meal-fastapi
-    ports:
-      - "8000:8000"
+    # ports:           <-- [중요] 역시 외부 노출 차단 (Spring이 내부망으로 통신함)
+    #   - "8000:8000"
+    expose:
+      - "8000"
     env_file:
-      - ../AI-main/.env          # FastAPI용 .env (OpenAI 키 등, 있으면)
+      - ../AI-main/.env
     depends_on:
       - redis
 
