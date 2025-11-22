@@ -3,33 +3,21 @@ package io.github.tlsdla1235.seniormealplan.service.orchestration;
 
 import io.github.tlsdla1235.seniormealplan.domain.Meal;
 import io.github.tlsdla1235.seniormealplan.domain.User;
-import io.github.tlsdla1235.seniormealplan.domain.enumPackage.Severity;
 import io.github.tlsdla1235.seniormealplan.domain.report.DailyReport;
 import io.github.tlsdla1235.seniormealplan.dto.async.DailyReportGenerationData;
-import io.github.tlsdla1235.seniormealplan.dto.dailyreport.DailyReportAnalysisRequestDto;
 import io.github.tlsdla1235.seniormealplan.dto.dailyreport.DailyReportAnalysisResultDto;
-import io.github.tlsdla1235.seniormealplan.dto.meal.AnalyzedFoodDto;
-import io.github.tlsdla1235.seniormealplan.dto.meal.MealDto;
-import io.github.tlsdla1235.seniormealplan.dto.user.WhoAmIDto;
-import io.github.tlsdla1235.seniormealplan.repository.DailyReportRepository;
-import io.github.tlsdla1235.seniormealplan.service.admin.S3UploadService;
+import io.github.tlsdla1235.seniormealplan.repository.MealRepository;
 import io.github.tlsdla1235.seniormealplan.service.food.MealService;
 import io.github.tlsdla1235.seniormealplan.service.report.DailyReportService;
-import io.github.tlsdla1235.seniormealplan.service.user.UserService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -40,7 +28,8 @@ public class GenerateDailyReportService {
     private final DailyReportService dailyReportService;
     private final MealService mealService;
     private final ReportAsyncService reportAsyncService;
-
+    private static final int CHUNK_SIZE = 5;
+    private final MealRepository mealRepository;
 
 
     @Scheduled(cron = "0 0 1 * * *", zone = "Asia/Seoul")
@@ -132,5 +121,63 @@ public class GenerateDailyReportService {
             log.info("  - DTO: {}", data);
         }
         reportAsyncService.requestBatchAnalysis(generatedData);
+    }
+
+
+
+    @Transactional
+    public void executeBatch_Before(LocalDate date) {
+        long startTime = System.currentTimeMillis();
+        log.info("[Batch-Before] 비효율적 배치 시작. (단일 트랜잭션, 전체 로딩)");
+
+        List<User> usersToReport = mealService.findUsersWithMealsOnDate(date);
+
+        if (usersToReport.isEmpty()) {
+            log.info("[Batch-Before] 대상 유저가 없습니다.");
+            return;
+        }
+        log.info("[Batch-Before] 총 {}명의 유저를 메모리에 적재했습니다.", usersToReport.size());
+        List<DailyReportGenerationData> generatedData = dailyReportService.createPendingReportsInTransaction(usersToReport, date);
+
+        if (!generatedData.isEmpty()) {
+            reportAsyncService.requestBatchAnalysis(generatedData);
+        }
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("[Batch-Before] 배치 종료. 소요 시간: {}ms", duration);
+    }
+
+    public void executeBatch_After(LocalDate date) {
+        long startTime = System.currentTimeMillis();
+        log.info("[Batch-After] 최적화 배치 시작. (Chunk Size: {}, 트랜잭션 분리)", CHUNK_SIZE);
+
+        int pageNumber = 0;
+        Slice<User> userPage;
+        int totalProcessed = 0;
+
+        do {
+            userPage = mealRepository.findDistinctUserByMealDate(date, PageRequest.of(pageNumber, CHUNK_SIZE));
+            List<User> usersChunk = userPage.getContent();
+
+            if (usersChunk.isEmpty()) break;
+
+            List<DailyReportGenerationData> chunkData = dailyReportService.createReportsForChunk(usersChunk, date);
+
+            if (!chunkData.isEmpty()) {
+                reportAsyncService.requestBatchAnalysis(chunkData);
+            }
+
+            totalProcessed += usersChunk.size();
+            log.info("[Batch-After] Chunk {} 처리 완료 (누적 {}명).", pageNumber + 1, totalProcessed);
+
+            pageNumber++;
+
+            chunkData = null;
+            usersChunk = null;
+
+        } while (userPage.hasNext());
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("[Batch-After] 배치 종료. 총 {}명 처리 완료. 소요 시간: {}ms", totalProcessed, duration);
     }
 }

@@ -3,6 +3,8 @@ package io.github.tlsdla1235.seniormealplan.repository;
 import io.github.tlsdla1235.seniormealplan.domain.Meal;
 import io.github.tlsdla1235.seniormealplan.domain.User;
 import io.github.tlsdla1235.seniormealplan.dto.meal.AnalyzedFoodDto;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,4 +34,7 @@ public interface MealRepository extends JpaRepository<Meal, Long> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+
+    @Query("SELECT DISTINCT m.user FROM Meal m WHERE m.mealDate = :date")
+    Slice<User> findDistinctUserByMealDate(@Param("date") LocalDate date, Pageable pageable);
 }

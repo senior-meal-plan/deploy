@@ -1,4 +1,4 @@
-package io.github.tlsdla1235.seniormealplan.controller.test;
+package io.github.tlsdla1235.seniormealplan.controller.temp;
 
 import io.github.tlsdla1235.seniormealplan.service.orchestration.GenerateDailyReportService;
 import lombok.RequiredArgsConstructor;
@@ -20,25 +20,31 @@ public class BatchTestController {
 
     private final GenerateDailyReportService generateDailyReportService;
 
-    // k6가 호출할 api
-    @PostMapping("/daily-report")
-    public ResponseEntity<String> triggerDailyReportBatch(
+    // [Before] 비효율적인 방식 실행
+    @PostMapping("/before")
+    public ResponseEntity<String> triggerBefore(
             @RequestParam(value = "date", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        if (date == null) {
-            date = LocalDate.now().minusDays(1); // 기본값: 어제
-        }
+        if (date == null) date = LocalDate.now().minusDays(1);
 
-        long startTime = System.currentTimeMillis();
-        log.info("[Batch Test] 데일리 리포트 생성 배치 시작 (대상 날짜: {})", date);
+        log.info("=== [Test] Before Scenario Triggered ===");
+        generateDailyReportService.executeBatch_Before(date);
 
-        // 기존에 만들어두신 테스트용 메서드 호출
-        generateDailyReportService.generateDailyReportsBatchTest(date);
+        return ResponseEntity.ok("Before Batch Completed");
+    }
 
-        long duration = System.currentTimeMillis() - startTime;
-        log.info("[Batch Test] 배치 종료. 소요 시간: {}ms", duration);
+    // [After] 최적화된 방식 실행
+    @PostMapping("/after")
+    public ResponseEntity<String> triggerAfter(
+            @RequestParam(value = "date", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        if (date == null) date = LocalDate.now().minusDays(1);
 
-        return ResponseEntity.ok("Batch Completed. Duration: " + duration + "ms");
+        log.info("=== [Test] After Scenario Triggered ===");
+        generateDailyReportService.executeBatch_After(date);
+
+        return ResponseEntity.ok("After Batch Completed");
     }
 }

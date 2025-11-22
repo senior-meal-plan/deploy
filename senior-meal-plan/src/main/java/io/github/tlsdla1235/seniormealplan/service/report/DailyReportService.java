@@ -14,6 +14,7 @@ import io.github.tlsdla1235.seniormealplan.dto.weeklyreport.DailyReportsForWeekl
 import io.github.tlsdla1235.seniormealplan.repository.DailyReportRepository;
 import io.github.tlsdla1235.seniormealplan.service.admin.S3UploadService;
 import io.github.tlsdla1235.seniormealplan.service.food.MealService;
+import org.springframework.transaction.annotation.Propagation;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -152,6 +153,37 @@ public class DailyReportService {
     }
 
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<DailyReportGenerationData> createReportsForChunk(List<User> userChunk, LocalDate date) {
+        List<DailyReport> reportsToSave = new ArrayList<>();
+        List<DailyReportGenerationData> resultData = new ArrayList<>();
+
+        for (User user : userChunk) {
+            DailyReport report = new DailyReport(user, date);
+            reportsToSave.add(report);
+        }
+
+        dailyReportRepository.saveAll(reportsToSave);
+
+        for (int i = 0; i < userChunk.size(); i++) {
+            User user = userChunk.get(i);
+            DailyReport savedReport = reportsToSave.get(i);
+
+            // 실제로는 여기서도 최적화를 위해 Batch Fetching(in query)을 쓰는 것이 좋음
+            List<Meal> meals = mealService.findByUserAndMealDateWithFoods(user, date);
+
+            // 테스트를 위해 식사 기록 유무와 상관없이 리포트를 만들거나, 필터링
+            if (!meals.isEmpty()) {
+                resultData.add(new DailyReportGenerationData(user, meals, savedReport));
+            }
+        }
+
+        return resultData;
+    }
+
+
+
+
 
 
     /**
@@ -178,4 +210,5 @@ public class DailyReportService {
                 .filter(Objects::nonNull)                  // null이 아닌 것만 필터링
                 .collect(Collectors.toList());             // 리스트로 수집
     }
+
 }
