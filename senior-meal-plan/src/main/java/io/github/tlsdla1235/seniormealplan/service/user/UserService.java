@@ -55,5 +55,15 @@ public class UserService {
         return user;
     }
 
+    private WhoAmIDto getWhoAmILogic(User user) {
+        User foundUser = userRepository.findById(user.getUserId())
+                .orElseThrow(EntityNotFoundException::new);
+        List<UserTopicDto> userTopic = userTopicService.getUserTopicsFromUser(foundUser);
+        return WhoAmIDto.from(foundUser, userTopic);
+    }
 
+    public WhoAmIDto whoAmINoCache(User user) {
+        log.info("[No-Cache] 강제 DB 조회 요청 - user: {}", user.getUserId());
+        return getWhoAmILogic(user);
+    }
 }
