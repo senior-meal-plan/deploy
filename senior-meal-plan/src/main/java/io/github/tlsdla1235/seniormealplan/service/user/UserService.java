@@ -10,6 +10,7 @@ import io.github.tlsdla1235.seniormealplan.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
@@ -22,6 +23,7 @@ import java.util.List;
 public class UserService {
     private final UserRepository userRepository;
     private final UserTopicService userTopicService;
+    private final CacheManager cacheManager;
 
     @Cacheable(value = "whoAmI", key = "#user.userId")
     public WhoAmIDto whoAmI(User user) {
@@ -36,7 +38,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "whoAmI", key = "#u.userId")
+//    @CacheEvict(value = "whoAmI", key = "#u.userId")
     public User updateUserProfile(User u, UpdateUserDto req) {
         User user = userRepository.findById(u.getUserId()).orElseThrow(EntityNotFoundException::new);
         user.updateProfile(
@@ -51,7 +53,14 @@ public class UserService {
         log.info("기존 건강 토픽 삭제 완료.");
 
         userTopicService.updateUserTopics(user, req);
-        log.info("Cache Evict: 사용자 id:{}의 프로필 업데이트 완료, 'whoAmI' 캐시 삭제", u.getUserId());
+
+        List<UserTopicDto> newTopics = userTopicService.getUserTopicsFromUser(user);
+        WhoAmIDto updatedWhoAmI = WhoAmIDto.from(user, newTopics);
+
+        // Redis 캐시에 직접 PUT (Key: userId, Value: 최신 WhoAmIDto)
+        cacheManager.getCache("whoAmI").put(user.getUserId(), updatedWhoAmI);
+
+        log.info("Cache Warming: 사용자 id:{}의 whoAmI 캐시를 최신 데이터로 갱신했습니다 (DB 조회 방지).", u.getUserId());
         return user;
     }
 
