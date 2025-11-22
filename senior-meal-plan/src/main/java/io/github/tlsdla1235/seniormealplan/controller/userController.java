@@ -29,4 +29,12 @@ public class userController {
         userService.updateUserProfile(u, updateUserDto);
         return ResponseEntity.ok("success");
     }
+
+    @GetMapping("/me/no-cache")
+    public ResponseEntity<WhoAmIDto> whoamINoCache(@AuthenticationPrincipal JwtAuthFilter.JwtPrincipal me) {
+        User u = User.builder().userId(me.userId()).build();
+        // Service의 NoCache 메소드 호출
+        WhoAmIDto whoAmIDto = userService.whoAmINoCache(u);
+        return ResponseEntity.ok(whoAmIDto);
+    }
 }
