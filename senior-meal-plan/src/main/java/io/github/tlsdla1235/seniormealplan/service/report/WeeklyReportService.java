@@ -2,6 +2,7 @@ package io.github.tlsdla1235.seniormealplan.service.report;
 
 import io.github.tlsdla1235.seniormealplan.domain.User;
 import io.github.tlsdla1235.seniormealplan.domain.enumPackage.Severity;
+import io.github.tlsdla1235.seniormealplan.domain.recipe.Recipe;
 import io.github.tlsdla1235.seniormealplan.domain.report.WeeklyReport;
 import io.github.tlsdla1235.seniormealplan.dto.async.WeeklyReportGenerationData;
 import io.github.tlsdla1235.seniormealplan.dto.user.WhoAmIDto;
@@ -12,6 +13,7 @@ import io.github.tlsdla1235.seniormealplan.dto.weeklyreport.GetWeeklyReportDto;
 import io.github.tlsdla1235.seniormealplan.dto.weeklyreport.MealForWeeklyDto;
 import io.github.tlsdla1235.seniormealplan.dto.weeklyreport.SimpleWeeklyReportDto;
 import io.github.tlsdla1235.seniormealplan.repository.WeeklyReportRepository;
+import io.github.tlsdla1235.seniormealplan.repository.recipe.UserWeeklyRecommendationRepository;
 import io.github.tlsdla1235.seniormealplan.service.food.MealService;
 import io.github.tlsdla1235.seniormealplan.service.user.UserService;
 import jakarta.persistence.EntityNotFoundException;
@@ -34,7 +36,7 @@ public class WeeklyReportService {
     private final UserService userService;
     private final DailyReportService dailyReportService;
     private final MealService mealService;
-
+    private final UserWeeklyRecommendationRepository userWeeklyRecommendationRepository;
 
     public WeeklyReport createPendingWeeklyReport(User user, LocalDate dateForWeek) {
         if (user == null || user.getUserId() == null) {
@@ -149,7 +151,14 @@ public class WeeklyReportService {
     public GetWeeklyReportDto getReport(Long reportId) {
         WeeklyReport persist =  weeklyReportRepository.findById(reportId)
                 .orElseThrow(() -> new EntityNotFoundException("리포트를 찾을 수 없습니다. ID: " + reportId));
-        return GetWeeklyReportDto.toDto(persist);
+
+        List<Recipe> recipes = userWeeklyRecommendationRepository.findRecipesByUserAndDateRange(
+                persist.getUser().getUserId(),
+                persist.getWeekStart(),
+                persist.getWeekEnd()
+        );
+        log.info(recipes.toString());
+        return GetWeeklyReportDto.of(persist, recipes);
     }
 
 }
