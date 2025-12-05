@@ -34,28 +34,44 @@ public class JwtService {
     @PostConstruct
     void init() { secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret)); }
 
-    public String generateToken(String subject, Map<String,Object> claims) {
+    public String generateAccessToken(String subject, Map<String,Object> claims) {
         var now = Instant.now();
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(expMinutes, ChronoUnit.MINUTES)))
-                .signWith(secretKey)                 // ← 캐시 사용
+                .expiration(Date.from(now.plus(expMinutes, ChronoUnit.MINUTES))) // ★ AT 만료
+                .signWith(secretKey)
                 .compact();
     }
 
+    // ▼ 2. Refresh Token 생성 (Claims 없이 Subject만 사용)
+    public String generateRefreshToken(String subject) {
+        var now = Instant.now();
+        return Jwts.builder()
+                .subject(subject)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(rtExpDays, ChronoUnit.DAYS))) // ★ RT 만료
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public long getRtExpDays() {
+        return rtExpDays;
+    }
+//
+//    public Integer extractSubAsUserId(String token) {
+//        return Integer.valueOf(extractSubject(token));
+//    }
+
+
     public String extractSubject(String token) {
         return Jwts.parser()
-                .verifyWith(secretKey)               // ← 캐시 사용
+                .verifyWith(secretKey)               // ← 서명 검증
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
-    }
-
-    public Integer extractSubAsUserId(String token) {
-        return Integer.valueOf(extractSubject(token));
     }
 
     private Claims parseClaims(String token) {

@@ -31,7 +31,7 @@ public class User {
     @Column(name = "user_input_id" , nullable = false, unique = true)
     private String userInputId;
 
-    @Column(name = "password", length = 100, nullable = false)
+    @Column(name = "password", length = 100)
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -41,7 +41,7 @@ public class User {
     @Column(name = "user_name", nullable = false) // nullable=false는 NOT NULL 제약조건
     private String userName;
 
-    @Column(name= "age", nullable = false)
+    @Column(name= "age")
     private Integer age;
 
     @Column(name = "created_at", updatable = false) // updatable=false는 한번 생성되면 수정되지 않음
@@ -69,6 +69,12 @@ public class User {
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default // Lombok Builder 사용 시 이 필드를 누락하면 자동으로 기본값을 설정해줌
     private boolean isDeleted = false; // 필드 선언 시 기본값 false로 초기화
+
+    @Column(name = "provider")
+    private String provider;
+
+    @Column(name = "provider_id")
+    private String providerId;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Meal> meals = new ArrayList<>();
