@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>강제 알림 테스트</title>
+</head>
+<body>
+    <h1>PC 알림 테스트 (Foreground 강제)</h1>
+    <h3 style="color: blue;" id="token-area">토큰 로딩중...</h3>
+    <div id="log-area"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUtGZ5A3MSDYjQnRguBx3dLuS9FKT2GQU",
+            authDomain: "senior-meal-plan.firebaseapp.com",
+            projectId: "senior-meal-plan",
+            storageBucket: "senior-meal-plan.firebasestorage.app",
+            messagingSenderId: "725290202600",
+            appId: "1:725290202600:web:773c67b19c879435a1605d",
+            measurementId: "G-YEECGP9T6J"
+        };
+        
+        // VAPID KEY 입력 필수
+        const VAPID_KEY = "BKOyBwah8kVPSNeAokU9OKNXbLWypdugwnZUWo4X3ZzjV4ldBkZfZIh2i4CAlIaFK5sbU4t0yQsXZIlqd5HgOXs"; 
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+
+        // [핵심] 보고 있을 때도 알림을 강제로 띄우는 코드
+        onMessage(messaging, (payload) => {
+            console.log('메시지 수신:', payload);
+            const logDiv = document.getElementById("log-area");
+            logDiv.innerHTML += `<p>📩 메시지 도착! 제목: ${payload.notification.title}</p>`;
+
+            // 브라우저 알림 직접 호출
+            new Notification(payload.notification.title, {
+                body: payload.notification.body,
+            });
+        });
+
+        async function getMyToken() {
+            try {
+                // 권한 다시 한 번 확실하게 요청
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    alert("알림 권한을 허용해주세요!");
+                    return;
+                }
+
+                const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
+                if (currentToken) {
+                    console.log("토큰:", currentToken);
+                    document.getElementById("token-area").innerText = currentToken;
+                    document.getElementById("token-area").onclick = () => {
+                        navigator.clipboard.writeText(currentToken);
+                        alert("복사됨");
+                    };
+                }
+            } catch (err) {
+                console.error('에러:', err);
+                document.getElementById("token-area").innerText = "에러발생: " + err;
+            }
+        }
+
+        getMyToken();
+    </script>
+</body>
+</html>

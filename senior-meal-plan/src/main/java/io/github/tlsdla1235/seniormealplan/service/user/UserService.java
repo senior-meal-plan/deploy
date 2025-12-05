@@ -75,4 +75,13 @@ public class UserService {
         log.info("[No-Cache] 강제 DB 조회 요청 - user: {}", user.getUserId());
         return getWhoAmILogic(user);
     }
+
+    @Transactional
+    public void refreshFcmToken(Long userId, String fcmToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저가 없습니다."));
+
+        // 유저 엔티티에 토큰 업데이트 (더티 체킹으로 자동 저장됨)
+        user.updateFcmToken(fcmToken);
+    }
 }

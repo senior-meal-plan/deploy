@@ -76,6 +76,9 @@ public class User {
     @Column(name = "provider_id")
     private String providerId;
 
+    @Column(name = "fcm_token", nullable = true)
+    private String fcmToken;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Meal> meals = new ArrayList<>();
 
@@ -92,6 +95,10 @@ public class User {
         this.userHeight = userHeight;
         this.userWeight = userWeight;
         this.userGender = userGender;
+    }
+
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
     }
 }
 
