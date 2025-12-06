@@ -22,8 +22,8 @@ public class MealNotificationScheduler {
 
     // 매일 오후 2시 0분 0초에 실행 (Cron 표현식)
     // 테스트할 땐 "0 * * * * *" (매분)으로 바꿔서 해보세요.
-//    @Scheduled(cron = "0 0 14 * * *")
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0 14 * * *")
+//    @Scheduled(cron = "0 * * * * *")
     @Transactional(readOnly = true)
     public void sendLunchReminder() {
         log.info("[스케줄러 시작] 점심 식사 미입력자 조회 중...");
