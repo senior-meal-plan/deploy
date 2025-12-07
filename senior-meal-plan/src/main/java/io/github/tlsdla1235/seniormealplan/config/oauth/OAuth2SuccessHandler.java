@@ -1,5 +1,6 @@
 package io.github.tlsdla1235.seniormealplan.config.oauth;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.tlsdla1235.seniormealplan.config.JwtService;
 import io.github.tlsdla1235.seniormealplan.domain.User;
 import io.github.tlsdla1235.seniormealplan.repository.UserRepository;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -74,18 +77,39 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         log.info("OAuth2 로그인 성! 토큰들은");
         log.info("Access Token: {}", accessToken);
         log.info("Refresh Token: {}", refreshToken);
+        log.info("User ROle: {}", user.getRole());
         log.info("=========================================================");
         
         // 5. 프론트엔드로 리다이렉트 (AT와 RT 모두 전달)
         // 상황에 따라 주소를 선택하세요:
         // - 웹 개발 테스트: "http://localhost:3000/oauth/callback"
         // - 앱 개발 테스트: "seniormeal://oauth/callback"
-        String targetUrl = UriComponentsBuilder.fromUriString("seniormeal://oauth/callback")
-                .queryParam("accessToken", accessToken)
-                .queryParam("refreshToken", refreshToken)
-                .queryParam("role", user.getRole().name())
-                .build().toUriString();
+//        String targetUrl = UriComponentsBuilder.fromUriString("seniormeal://oauth/callback")
+//                .queryParam("accessToken", accessToken)
+//                .queryParam("refreshToken", refreshToken)
+//                .queryParam("role", user.getRole().name())
+//                .build().toUriString();
+//
+//        getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+
+// 응답할 데이터 만들기
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("accessToken", accessToken);
+        responseBody.put("refreshToken", refreshToken);
+        responseBody.put("role", user.getRole().name());
+        responseBody.put("message", "로그인 성공");
+
+// Jackson 라이브러리를 사용하여 Map -> JSON String 변환 후 쓰기
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonStr = objectMapper.writeValueAsString(responseBody);
+
+        response.getWriter().write(jsonStr);
+
+// 로그 확인
+        log.info("프론트엔드로 JSON 응답 전송 완료: {}", jsonStr);
     }
 }
