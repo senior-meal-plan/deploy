@@ -84,32 +84,32 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // 상황에 따라 주소를 선택하세요:
         // - 웹 개발 테스트: "http://localhost:3000/oauth/callback"
         // - 앱 개발 테스트: "seniormeal://oauth/callback"
-//        String targetUrl = UriComponentsBuilder.fromUriString("seniormeal://oauth/callback")
-//                .queryParam("accessToken", accessToken)
-//                .queryParam("refreshToken", refreshToken)
-//                .queryParam("role", user.getRole().name())
-//                .build().toUriString();
+        String targetUrl = UriComponentsBuilder.fromUriString("seniormeal://oauth/callback")
+                .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshToken)
+                .queryParam("role", user.getRole().name())
+                .build().toUriString();
+
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
+
+//        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+//        response.setCharacterEncoding("UTF-8");
 //
-//        getRedirectStrategy().sendRedirect(request, response, targetUrl);
-
-
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding("UTF-8");
-
-// 응답할 데이터 만들기
-        Map<String, Object> responseBody = new HashMap<>();
-        responseBody.put("accessToken", accessToken);
-        responseBody.put("refreshToken", refreshToken);
-        responseBody.put("role", user.getRole().name());
-        responseBody.put("message", "로그인 성공");
-
-// Jackson 라이브러리를 사용하여 Map -> JSON String 변환 후 쓰기
-        ObjectMapper objectMapper = new ObjectMapper();
-        String jsonStr = objectMapper.writeValueAsString(responseBody);
-
-        response.getWriter().write(jsonStr);
-
-// 로그 확인
-        log.info("프론트엔드로 JSON 응답 전송 완료: {}", jsonStr);
+//// 응답할 데이터 만들기
+//        Map<String, Object> responseBody = new HashMap<>();
+//        responseBody.put("accessToken", accessToken);
+//        responseBody.put("refreshToken", refreshToken);
+//        responseBody.put("role", user.getRole().name());
+//        responseBody.put("message", "로그인 성공");
+//
+//// Jackson 라이브러리를 사용하여 Map -> JSON String 변환 후 쓰기
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        String jsonStr = objectMapper.writeValueAsString(responseBody);
+//
+//        response.getWriter().write(jsonStr);
+//
+//// 로그 확인
+//        log.info("프론트엔드로 JSON 응답 전송 완료: {}", jsonStr);
     }
 }
