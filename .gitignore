@@ -5,6 +5,19 @@ Thumbs.db
 .vscode/
 *.iml
 
+# === 환경 변수 / secret ===
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.p12
+*.jks
+
+# === BMAD 로컬 런타임 ===
+_bmad/
+
 # === 인프라 관련 ===
 infra/.env
 infra/*.log
